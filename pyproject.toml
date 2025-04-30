@@ -40,6 +40,8 @@ cuda = [ "torch (==2.3.1+cu121)", "torchaudio (==2.3.1+cu121)" ]
 [[tool.poetry.packages]]
 include = "simbiosi"
 
+[[tool.poetry.packages]]
+include = "simbiosi_dpp"
 
 [[tool.poetry.source]]
 name = "tuna"
