@@ -26,6 +26,7 @@ def main():
     df["person"] = df["object_name"].progress_apply(get_person)
     df["id"] = df["person"].progress_apply(person_to_id)
     df = df.drop(columns=["md5", "size"])
+    df = df.sort_values(by=["id"])
     print(df.head())
     df.to_csv(output_path, sep="\t", index=False)
 
