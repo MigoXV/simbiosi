@@ -1,0 +1,1 @@
+from simbiosi.models.model import InceptionResnetV1
