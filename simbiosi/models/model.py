@@ -1,7 +1,9 @@
+import torch
 from fairseq.models import BaseFairseqModel, register_model, register_model_architecture
 from torch import nn
 from torch.nn import functional as F
-
+from fairseq.dataclass import FairseqDataclass
+from dataclasses import dataclass, field
 from simbiosi.models.layers import (
     BasicConv2d,
     Block8,
@@ -11,8 +13,22 @@ from simbiosi.models.layers import (
     Mixed_7a,
 )
 
+@dataclass
+class InceptionResnetConfig(FairseqDataclass):
+    dropout_prob: float = field(
+        default=0.6,
+        metadata={"help": "Dropout probability for the model."},
+    )
+    freeze_embedder: bool = field(
+        default=False,
+        metadata={"help": "Whether to freeze the embedder parameters."},
+    )
+    base_layers: int = field(
+        default=3,
+        metadata={"help": "Number of base layers."},
+    )
 
-@register_model("inception_resnet")
+@register_model("inception_resnet",dataclass=InceptionResnetConfig)
 class InceptionResnetV1(BaseFairseqModel):
 
     @classmethod
@@ -21,6 +37,8 @@ class InceptionResnetV1(BaseFairseqModel):
         # Instantiate the model
         model = cls(
             num_classes=task.num_classes,
+            dropout_prob=args.dropout_prob,
+            freeze_embedder=args.freeze_embedder,
         )
         return model
 
@@ -28,14 +46,26 @@ class InceptionResnetV1(BaseFairseqModel):
         self,
         num_classes,
         dropout_prob=0.6,
+        freeze_embedder=False,
     ):
         super().__init__()
         self.num_classes = num_classes
+        self.freeze_embedder = freeze_embedder
+
         self.embedder = InceptionResnetEmbedder(dropout_prob=dropout_prob)
         self.logits = nn.Linear(512, self.num_classes)
 
+        if freeze_embedder:
+            for param in self.embedder.parameters():
+                param.requires_grad = False
+            self.embedder.eval()
+
     def forward(self, x):
-        x = self.embedder(x)
+        if self.freeze_embedder:
+            with torch.no_grad():
+                x = self.embedder(x)
+        else:
+            x = self.embedder(x)
         x = self.logits(x)
         return x
 

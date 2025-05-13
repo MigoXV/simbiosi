@@ -391,8 +391,8 @@ class WandBProgressBarWrapper(BaseProgressBar):
         ax.xaxis.set_label_position("top")
         ax.yaxis.set_label_position("left")
         ax.tick_params(
-            left=True,
-            top=True,
+            left=False,
+            top=False,
             labelleft=False,
             labeltop=False,
             bottom=False,  # 不显示底部刻度
