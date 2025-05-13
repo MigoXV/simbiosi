@@ -20,7 +20,7 @@
             "args": [
                 "--config-path=../presets",
                 // "--config-dir=tmp-workspace/presets/paraformer",
-                "--config-name=train-test.yaml",
+                "--config-name=train-test2.yaml",
             ],
             "env": {
                 "HYDRA_FULL_ERROR": "1",

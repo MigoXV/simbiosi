@@ -20,7 +20,7 @@ class InceptionResnetV1(BaseFairseqModel):
         """Build a new model instance."""
         # Instantiate the model
         model = cls(
-            num_classes=task.max_id,
+            num_classes=task.num_classes,
         )
         return model
 

@@ -16,7 +16,7 @@ class CrossEntropyLoss(FairseqCriterion):
 
     def __init__(self, task):
         super().__init__(task)
-        self.num_classes = task.max_id
+        self.num_classes = task.num_classes
 
     def forward(self, model, sample, reduce=True):
         # 假设 sample 为 (features, targets)，其中 targets 为类别索引
@@ -28,9 +28,10 @@ class CrossEntropyLoss(FairseqCriterion):
         )
         sample_size = targets.numel()
         # 计算预测结果（取最大概率对应的类别）
-        preds = torch.argmax(outputs, dim=1)
+        targets = targets.detach().cpu().numpy()
+        preds = torch.argmax(outputs, dim=1).detach().cpu().numpy()
         # 算混淆矩阵
-        confusion_matrix = torch.bincount(
+        confusion_matrix = np.bincount(
             targets * self.num_classes + preds,
             minlength=self.num_classes * self.num_classes,
         ).reshape(self.num_classes, self.num_classes)
@@ -66,9 +67,6 @@ class CrossEntropyLoss(FairseqCriterion):
         # 计算混淆矩阵
         confusion_matrix = (
             sum(log.get("confusion_matrix", 0) for log in logging_outputs)
-            .detach()
-            .cpu()
-            .numpy()
         )
         metrics.log_scalar_sum(
             "confusion_matrix", confusion_matrix, sample_size, round=3

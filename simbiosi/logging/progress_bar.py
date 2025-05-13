@@ -357,32 +357,32 @@ class WandBProgressBarWrapper(BaseProgressBar):
                 wandb.log({prefix + key: stats[key].val}, step=step)
             elif isinstance(stats[key], Number):
                 wandb.log({prefix + key: stats[key]}, step=step)
-            # elif isinstance(stats[key], np.ndarray) or isinstance(
-            #     stats[key], torch.Tensor
-            # ):
-            #     time0 = time.time()
-            #     self.mat_plot(stats[key], prefix + key, step)
-            #     wandb.log(
-            #         {prefix + "plot_time": time.time() - time0},
-            #         step=step,
-            #     )
+            elif isinstance(stats[key], np.ndarray) or isinstance(
+                stats[key], torch.Tensor
+            ):
+                time0 = time.time()
+                self.mat_plot(stats[key], prefix + key, step)
+                wandb.log(
+                    {prefix + "plot_time": time.time() - time0},
+                    step=step,
+                )
 
     def mat_plot(self, matrix, title, step):
         matrix = np.array(matrix).astype(int)
-        rows, cols = matrix.shape
+        # rows, cols = matrix.shape
 
-        x_labels = [str(i) for i in range(cols)]
-        y_labels = [str(i) for i in range(rows)]
+        # x_labels = [str(i) for i in range(cols)]
+        # y_labels = [str(i) for i in range(rows)]
 
         fig, ax = plt.subplots(figsize=(6, 6))
         sns.heatmap(
             matrix,
-            annot=True,
-            fmt="d",
+            annot=False,
+            # fmt="d",
             cmap="Blues",
             cbar=False,
-            xticklabels=x_labels,
-            yticklabels=y_labels,
+            # xticklabels=x_labels,
+            # yticklabels=y_labels,
             ax=ax,
         )
         ax.set_xlabel("Predicted")
@@ -393,8 +393,8 @@ class WandBProgressBarWrapper(BaseProgressBar):
         ax.tick_params(
             left=True,
             top=True,
-            labelleft=True,
-            labeltop=True,
+            labelleft=False,
+            labeltop=False,
             bottom=False,  # 不显示底部刻度
             labelbottom=False,  # 不显示底部标签
         )

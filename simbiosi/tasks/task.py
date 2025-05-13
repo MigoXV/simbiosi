@@ -16,7 +16,7 @@ class SimbiosiTask(FairseqTask):
         self.cfg = cfg
         self.train_df = pd.read_csv(cfg.train_tsv, sep="\t")
         self.valid_df = pd.read_csv(cfg.val_tsv, sep="\t")
-        self.max_id = max(self.train_df["id"].max(), self.valid_df["id"].max())
+        self.num_classes = max(self.train_df["id"].max(), self.valid_df["id"].max()) + 1
 
     def load_dataset(self, split, **kwargs):
         if split == "train":

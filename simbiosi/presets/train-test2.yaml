@@ -7,19 +7,19 @@ hydra:
 common:
   log_format: tqdm
   log_interval: 5
-  cpu: true
-  # wandb_project: simbiosi
+  # cpu: true
+  wandb_project: simbiosi
 
 checkpoint:
-  save_dir: outputs/testbench
-  finetune_from_model: model-bin/baseline-fairseq.pt
-  load_checkpoint_on_all_dp_ranks: true
+  save_dir: outputs/101-04
+  finetune_from_model: model-bin/baseline-fairseq-101.pt
+  # load_checkpoint_on_all_dp_ranks: true
   
 
 task:
   _name: simbiosi-task
-  train_tsv: data-bin/splits/all_with_ids_train_train_test.tsv
-  val_tsv: data-bin/splits/all_with_ids_train_train_test.tsv
+  train_tsv: data-bin/splits2/filter_all_with_ids_train_train.tsv
+  val_tsv: data-bin/splits2/filter_all_with_ids_train_val.tsv
   minio:
     endpoint: "192.168.0.222:39000"
     access_key: test-dataset
@@ -28,16 +28,16 @@ task:
     bucket: simbiosi
 
 dataset:
-  num_workers: 0
-  batch_size: 3
+  num_workers: 2
+  batch_size: 32
   skip_invalid_size_inputs_valid_test: true
 
 criterion:
   _name: simbiosi_ce
 
 optimization:
-  max_epoch: 60
-  lr: [5e-4]
+  max_epoch: 20
+  lr: [5e-5]
   use_bmuf: false
   # use_bmuf: true
 
@@ -48,7 +48,7 @@ optimizer:
 
 lr_scheduler:
   _name: fixed
-  lr: [5e-4]
+  lr: [5e-5]
 
 distributed_training:
   distributed_world_size: 1
