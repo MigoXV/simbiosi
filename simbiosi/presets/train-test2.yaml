@@ -1,0 +1,62 @@
+# @package _group_
+hydra:
+  run:
+    dir: .
+
+
+common:
+  log_format: tqdm
+  log_interval: 5
+  # cpu: true
+  wandb_project: simbiosi
+
+checkpoint:
+  save_dir: outputs/101-04
+  finetune_from_model: model-bin/baseline-fairseq-101.pt
+  # load_checkpoint_on_all_dp_ranks: true
+  
+
+task:
+  _name: simbiosi-task
+  train_tsv: data-bin/splits2/filter_all_with_ids_train_train.tsv
+  val_tsv: data-bin/splits2/filter_all_with_ids_train_val.tsv
+  minio:
+    endpoint: "192.168.0.222:39000"
+    access_key: test-dataset
+    secret_key: test-dataset
+    secure: false
+    bucket: simbiosi
+
+dataset:
+  num_workers: 2
+  batch_size: 32
+  skip_invalid_size_inputs_valid_test: true
+
+criterion:
+  _name: simbiosi_ce
+
+optimization:
+  max_epoch: 400
+  lr: [5e-5]
+  use_bmuf: false
+  # use_bmuf: true
+
+optimizer:
+  _name: adam
+  adam_betas: (0.9,0.98)
+  adam_eps: 1e-08
+
+lr_scheduler:
+  _name: fixed
+  lr: [5e-5]
+
+distributed_training:
+  distributed_world_size: 1
+  ddp_backend: no_c10d
+  # ddp_backend: c10d
+
+model:
+  _name: inception_resnet_v1
+  base_layers: 3
+  dropout_prob: 0.6
+  freeze_embedder: false

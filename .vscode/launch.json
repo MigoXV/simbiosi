@@ -10,6 +10,25 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "name": "train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "simbiosi.commands.hydra_train",
+            "console": "integratedTerminal",
+            "args": [
+                "--config-path=../presets",
+                // "--config-dir=tmp-workspace/presets/paraformer",
+                "--config-name=train-test2-freeze.yaml",
+            ],
+            "env": {
+                "HYDRA_FULL_ERROR": "1",
+                "PYTHONPATH": "${workspaceFolder}",
+                "CUDA_VISIBLE_DEVICES": "2,3",
+                "OC_CAUSE":"1"
+            },
+            "justMyCode": false
+        },
     ]
 }
