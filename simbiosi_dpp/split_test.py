@@ -8,55 +8,55 @@ def split_by_ids(input_file: Path,
                  test_ratio: float,
                  seed: int = 42):
     """
-    Split a TSV file into train and test sets based on unique IDs.
+    根据唯一 ID 对 TSV 文件进行划分为训练集和测试集。
 
-    Parameters:
-    - input_file: Path to the input TSV file.
-    - output_dir: Directory where output files will be saved.
-    - id_col: Column name to group by.
-    - test_ratio: Float between 0 and 1, proportion of data to use as test set.
-    - seed: Random seed for reproducibility.
+    参数：
+    - input_file: 输入的 TSV 文件路径。
+    - output_dir: 输出目录。
+    - id_col: 用于分组的列名（通常是类别 id）。
+    - test_ratio: 测试集比例（0 到 1 之间）。
+    - seed: 随机种子，用于结果可复现。
     """
-    # Load data
+    # 加载数据
     df = pd.read_csv(input_file, sep="\t")
 
-    # Validate test_ratio
+    # 检查 test_ratio 是否合理
     if not (0.0 < test_ratio < 1.0):
-        raise ValueError("test_ratio must be between 0 and 1")
+        raise ValueError("test_ratio 必须在 0 到 1 之间")
 
-    # Get unique IDs and assign random values
+    # 获取唯一 ID，并为其分配随机值
     rng = np.random.RandomState(seed)
     unique_ids = np.array(df[id_col].unique())
     rand_vals = rng.rand(len(unique_ids))
 
-    # Assign split labels based on random values
+    # 根据随机值决定每个 ID 属于训练集还是测试集
     labels = np.where(rand_vals < test_ratio, 'test', 'train')
 
-    # Create DataFrame for ID-to-split mapping
+    # 构建 ID 到 split 的映射表
     map_df = pd.DataFrame({id_col: unique_ids, 'split': labels})
 
-    # Merge split labels back to main DataFrame
+    # 把划分结果合并回原始数据中
     df = df.merge(map_df, on=id_col)
 
-    # Ensure output directory exists
+    # 创建输出目录（如果不存在）
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save each split
+    # 保存每个子集为独立文件
     base_name = input_file.stem
     for split_name in ['test', 'train']:
         split_df = df[df['split'] == split_name].drop(columns=['split'])
         out_file = output_dir / f"{base_name}_{split_name}.tsv"
         split_df.to_csv(out_file, sep="\t", index=False)
-        print(f"Saved {split_name} set: {out_file} ({len(split_df)} rows)")
+        print(f"已保存 {split_name} 集：{out_file}（共 {len(split_df)} 行）")
 
 
 if __name__ == "__main__":
     # === 硬编码参数设置 ===
-    input_file = Path("data-bin/all_with_ids.tsv")   # 输入 TSV 文件路径，请根据需要修改
-    output_dir = Path("data-bin/splits")             # 输出目录，请根据需要修改
-    id_col = "id"                                    # 用于分组的列名
-    test_ratio = 0.15                                 # 测试集比例，训练集自动为 1 - test_ratio
-    seed = 42                                        # 随机种子，保证可复现
+    input_file = Path("data-bin/filter_all_with_ids.tsv")  # 输入文件路径
+    output_dir = Path("data-bin/splits2")                  # 输出目录
+    id_col = "id"                                           # 用于划分的列（通常是类别 id）
+    test_ratio = 0.15                                       # 测试集比例
+    seed = 42                                               # 随机种子
 
-    # 执行拆分
+    # 执行划分
     split_by_ids(input_file, output_dir, id_col, test_ratio, seed)

@@ -1,72 +1,73 @@
-import random
 from pathlib import Path
-
 import pandas as pd
-from tqdm import tqdm
+import numpy as np
 
-
-def remap_ids_by_person(df: pd.DataFrame) -> pd.DataFrame:
+def split_each_id(input_file: Path,
+                  output_dir: Path,
+                  id_col: str,
+                  val_ratio: float,
+                  seed: int = 42):
     """
-    根据 person 列，重新从 0 开始为每个不同的 person 分配连续的 id
+    对每个 person 重新编号 id，然后按 id 分组划分训练集和验证集。
+
+    参数：
+    - input_file: 输入 TSV 文件路径。
+    - output_dir: 输出目录。
+    - id_col: 用于分组的列名（通常是类别 id）。
+    - val_ratio: 验证集比例（0~1之间）。
+    - seed: 随机种子。
     """
-    df = df.copy()
-    df['id'] = pd.Categorical(df['person']).codes
-    return df
+    df = pd.read_csv(input_file, sep="\t")
 
-def select_validation_set(df: pd.DataFrame, id_count: int = 100, images_per_id: int = 2) -> pd.DataFrame:
-    """
-    - 找出样本数 > images_per_id 的 id
-    - 随机抽取 id_count 个 id
-    - 每个 id 随机抽 images_per_id 张图片
-    返回的 val_df 会保留原始行索引，便于后续从 df 中删除
-    """
-    counts = df['id'].value_counts()
-    eligible_ids = counts[counts > images_per_id].index.tolist()
+    if not (0.0 < val_ratio < 1.0):
+        raise ValueError("val_ratio 必须在 0 到 1 之间")
 
-    if len(eligible_ids) < id_count:
-        raise ValueError(f"满足 > {images_per_id} 张的 id 只有 {len(eligible_ids)} 个，少于所需的 {id_count} 个")
+    # === 重新编号 id ===
+    # 将每个 person 映射到一个新的 id（按字典序或出现顺序均可）
+    person2id = {person: i for i, person in enumerate(sorted(df["person"].unique()))}
+    df["id"] = df["person"].map(person2id)
 
-    selected_ids = random.sample(eligible_ids, id_count)
+    rng = np.random.default_rng(seed)
 
-    pieces = []
-    for id_ in tqdm(selected_ids, desc="Selecting validation images"):
-        sampled = df[df['id'] == id_].sample(n=images_per_id)
-        pieces.append(sampled)
+    train_rows = []
+    val_rows = []
 
-    val_df = pd.concat(pieces)  # 保留原始索引
-    return val_df
+    # 针对每个 id 单独划分
+    for label, group in df.groupby(id_col):
+        indices = group.index.to_numpy()
+        rng.shuffle(indices)
+
+        n_val = int(len(indices) * val_ratio)
+        val_idx = indices[:n_val]
+        train_idx = indices[n_val:]
+
+        val_rows.append(df.loc[val_idx])
+        train_rows.append(df.loc[train_idx])
+
+    # 合并所有分组结果
+    train_df = pd.concat(train_rows).reset_index(drop=True)
+    val_df = pd.concat(val_rows).reset_index(drop=True)
+
+    # 输出结果
+    output_dir.mkdir(parents=True, exist_ok=True)
+    base_name = input_file.stem
+    train_path = output_dir / f"{base_name}_train.tsv"
+    val_path = output_dir / f"{base_name}_val.tsv"
+
+    train_df.to_csv(train_path, sep="\t", index=False)
+    val_df.to_csv(val_path, sep="\t", index=False)
+
+    print(f"已重新编号：{len(person2id)} 个类别")
+    print(f"训练集：{len(train_df)} 行，保存于 {train_path}")
+    print(f"验证集：{len(val_df)} 行，保存于 {val_path}")
+
 
 if __name__ == "__main__":
-    # ======= 配置部分（硬编码输入/输出路径） =======
-    tsv_path    = Path("data-bin/splits/all_with_ids_train.tsv")  # 输入 TSV 文件
-    output_dir  = Path("data-bin/splits")            # 输出目录
-    # ============================================
+    # === 参数设置 ===
+    input_file = Path("data-bin/splits2/filter_all_with_ids_train.tsv")
+    output_dir = Path("data-bin/splits2")
+    id_col = "id"
+    val_ratio = 0.2
+    seed = 42
 
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # 1. 读取原始 TSV
-    df = pd.read_csv(tsv_path, sep='\t')
-
-    # 2. 根据 person 重新分配连续 id
-    df = remap_ids_by_person(df)
-
-    # 3. 生成验证集 DataFrame（100 个 id，每个 id 2 张）
-    val_df = select_validation_set(df, id_count=100, images_per_id=2)
-
-    # 4. 剩余部分作为训练集
-    train_df = df.drop(val_df.index)
-
-    # 5. 保存到文件，使用 _val 和 _train 后缀
-    base_name   = tsv_path.stem
-    val_path    = output_dir / f"{base_name}_val.tsv"
-    train_path  = output_dir / f"{base_name}_train.tsv"
-
-    # 只保留三列并按需求顺序输出
-    cols = ['object_name', 'person', 'id']
-    val_df.to_csv(val_path, sep='\t', index=False, columns=cols)
-    train_df.to_csv(train_path, sep='\t', index=False, columns=cols)
-
-    print(f"重新分配了 id，共有 {df['id'].nunique()} 个类别")
-    print(f"验证集已保存到: {val_path}")
-    print(f"训练集已保存到: {train_path}")
-
+    split_each_id(input_file, output_dir, id_col, val_ratio, seed)
