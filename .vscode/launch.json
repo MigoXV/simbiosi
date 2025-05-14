@@ -20,7 +20,8 @@
             "args": [
                 "--config-path=../presets",
                 // "--config-dir=tmp-workspace/presets/paraformer",
-                "--config-name=train-test2-freeze.yaml",
+                "--config-name=train-test2-local",
+                "+task.root_dir=data-bin/lfw-deepfunneled"
             ],
             "env": {
                 "HYDRA_FULL_ERROR": "1",

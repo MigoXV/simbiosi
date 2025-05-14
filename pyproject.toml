@@ -24,7 +24,8 @@ dependencies = [
 "seaborn (>=0.13.2,<0.14.0)",
 "violoncello",
 "onnxruntime (>=1.21.1,<2.0.0)",
-"imageio (>=2.37.0,<3.0.0)"
+"imageio (>=2.37.0,<3.0.0)",
+"peft (>=0.15.2,<0.16.0)"
 ]
 
 

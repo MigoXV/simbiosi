@@ -1,33 +1,21 @@
+from pathlib import Path
+
 import imageio.v3 as iio
-import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
 from fairseq import metrics
 from fairseq.data import FairseqDataset
-from PIL import Image
-from violoncello.drivers.httpx_driver import HttpxAudioDriver
-
-from simbiosi.configs.minio import MinIOConfig
 
 
-class MinIODataset(FairseqDataset):
+class LocalMinIODataset(FairseqDataset):
     def __init__(
         self,
         df: pd.DataFrame,
-        driver_config: MinIOConfig,
+        root_dir: Path,
     ):
         self.df = df
-        # init minio
-        self.driver = HttpxAudioDriver(
-            endpoint=driver_config.endpoint,
-            bucket=driver_config.bucket,
-            access_key=driver_config.access_key,
-            secret_key=driver_config.secret_key,
-            secure=driver_config.secure,
-            sr=8000,
-            session_warmup=10,
-        )
+        self.root_dir = root_dir
         self.transform = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -44,8 +32,9 @@ class MinIODataset(FairseqDataset):
 
     def __getitem__(self, index):
         row = self.df.iloc[index]
-        image = self.driver.get_object(row["object_name"])
-        image = iio.imread(image)
+        # image = self.driver.get_object(row["object_name"])
+        # image = iio.imread(image)
+        image = iio.imread(self.root_dir / row["object_name"])
         image = self.transform(image)
         face_id = row["id"]
         return image, face_id
@@ -65,17 +54,19 @@ class MinIODataset(FairseqDataset):
         return 1
 
 
-class MinIOTrainDataset(MinIODataset):
+class LocalMinIOTrainDataset(LocalMinIODataset):
 
-    def __init__(self, df, driver_config,use_augmentation:bool=True):
-        super().__init__(df, driver_config)
+    def __init__(self, df, root_dir: Path, use_augmentation: bool = True):
+        super().__init__(df, root_dir)
         self.use_augmentation = use_augmentation
         if use_augmentation:
             self.transform = transforms.Compose(
                 [
                     transforms.ToPILImage(),  # 接受 numpy array -> PIL.Image
                     transforms.Resize((128, 128)),
-                    transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+                    transforms.ColorJitter(
+                        brightness=0.2, contrast=0.2, saturation=0.2
+                    ),
                     transforms.GaussianBlur(kernel_size=(3, 3), sigma=(0.1, 1.0)),
                     transforms.Resize((112, 112)),  # 最终人脸尺寸
                     transforms.ToTensor(),  # PIL -> [0,1] FloatTensor, shape=(C,H,W)
