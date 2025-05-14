@@ -20,7 +20,7 @@
             "args": [
                 "--config-path=../presets",
                 // "--config-dir=tmp-workspace/presets/paraformer",
-                "--config-name=train-test2-local",
+                "--config-name=train-test2-local-freeze",
                 "+task.root_dir=data-bin/lfw-deepfunneled"
             ],
             "env": {

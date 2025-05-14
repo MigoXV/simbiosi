@@ -109,13 +109,9 @@ class CrossEntropyLoss(FairseqCriterion):
         actual_true_mask = actual_true > 0
         p = np.diag(confusion_matrix) / (pred_true + EPS)
         r = np.diag(confusion_matrix) / (actual_true + EPS)
-        f1 = 2 * (p * r) / (p + r + EPS)
-        macro_f1 = round(float(f1[pred_true_mask & actual_true_mask].mean() * 100), 1)
+        macro_p = round(float(p[pred_true_mask].mean() * 100), 1)
+        macro_r = round(float(r[actual_true_mask].mean() * 100), 1)
+        # 计算 F1 分数
+        f1 = 2 * (macro_p * macro_r) / (macro_p + macro_r + EPS)
+        macro_f1 = round(float(f1 * 100), 1)
         return macro_f1
-        # tp = np.diag(confusion_matrix)
-        # fp = np.sum(confusion_matrix, axis=0) - tp
-        # fn = np.sum(confusion_matrix, axis=1) - tp
-        # precision = tp / (tp + fp + EPS)
-        # recall = tp / (tp + fn + EPS)
-        # f1_scores = 2 * (precision * recall) / (precision + recall + EPS)
-        # return round(float(np.mean(f1_scores) * 100), 1)
